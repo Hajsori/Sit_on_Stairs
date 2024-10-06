@@ -6,7 +6,7 @@ import * as MinecraftUi from "@minecraft/server-ui"
 var cooldown = {}
 
 
-Minecraft.world.afterEvents.playerInteractWithBlock.subscribe((data) => {
+Minecraft.world.beforeEvents.playerInteractWithBlock.subscribe((data) => {
     let player = data.player
     if (cooldown[player.id] == true) return
 
@@ -17,20 +17,22 @@ Minecraft.world.afterEvents.playerInteractWithBlock.subscribe((data) => {
 
     if (player.typeId !== "minecraft:player" || player.isSneaking) return
 
-    if (player.dimension.getBlock(data.block.location).typeId.includes("stairs") && Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == "seat:All Stairs")) == 1) {
-        try {
-            player.runCommand(`summon sit:seat ${data.block.location.x} ${data.block.location.y + .35} ${data.block.location.z}`)
+    Minecraft.system.run(() => {
+        if (player.dimension.getBlock(data.block.location).typeId.includes("stairs") && Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == "seat:All Stairs")) == 1) {
+            try {
+                player.runCommand(`summon sit:seat ${data.block.location.x} ${data.block.location.y + .35} ${data.block.location.z}`)
+                player.runCommandAsync(`ride @s start_riding @r[x=${data.block.location.x}, y=${data.block.location.y}, z=${data.block.location.z}, type=sit:seat]`)
+            } catch (err) { console.error(err) }
+        } else if (player.dimension.getBlock(data.block.location).typeId.includes("slab") && Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == "seat:All Slabs")) == 1) {
+            player.runCommandAsync(`summon sit:seat ${data.block.location.x} ${data.block.location.y += 0.35} ${data.block.location.z} ${(data.block.permutation.getState("weirdo_direction") * 90)}`)
             player.runCommandAsync(`ride @s start_riding @r[x=${data.block.location.x}, y=${data.block.location.y}, z=${data.block.location.z}, type=sit:seat]`)
-        } catch (err) { console.error(err) }
-    } else if (player.dimension.getBlock(data.block.location).typeId.includes("slab") && Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == "seat:All Slabs")) == 1) {
-        player.runCommandAsync(`summon sit:seat ${data.block.location.x} ${data.block.location.y += 0.35} ${data.block.location.z} ${(data.block.permutation.getState("weirdo_direction") * 90)}`)
-        player.runCommandAsync(`ride @s start_riding @r[x=${data.block.location.x}, y=${data.block.location.y}, z=${data.block.location.z}, type=sit:seat]`)
-    } else for (let seat of Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScores()) if (seat.participant.displayName.startsWith("seatId")) {
-        if (Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == seat.participant.displayName)) >= 1 && player.dimension.getBlock(data.block.location).typeId == seat.participant.displayName.replace("seatId:", "")) {
-            player.runCommandAsync(`summon sit:seat ${data.block.location.x} ${data.block.location.y += Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == `height:${seat.participant.displayName.replace("seatId:", "")}`)) / 10} ${data.block.location.z}`)
-            player.runCommandAsync(`ride @s start_riding @r[x=${data.block.location.x}, y=${data.block.location.y}, z=${data.block.location.z}, type=sit:seat]`)
+        } else for (let seat of Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScores()) if (seat.participant.displayName.startsWith("seatId")) {
+            if (Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == seat.participant.displayName)) >= 1 && player.dimension.getBlock(data.block.location).typeId == seat.participant.displayName.replace("seatId:", "")) {
+                player.runCommandAsync(`summon sit:seat ${data.block.location.x} ${data.block.location.y += Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == `height:${seat.participant.displayName.replace("seatId:", "")}`)) / 10} ${data.block.location.z}`)
+                player.runCommandAsync(`ride @s start_riding @r[x=${data.block.location.x}, y=${data.block.location.y}, z=${data.block.location.z}, type=sit:seat]`)
+            }
         }
-    }
+    })
 })
 
 Minecraft.system.run(function tick() {
@@ -48,7 +50,7 @@ Minecraft.system.run(function tick() {
         entity.runCommandAsync(`testfor @a[r=1]`).then((res) => {
             if (res.successCount >= 1) playerNear = true
         })
-        Minecraft.system.runTimeout(() => { if (!playerNear) entity.kill() }, 1)
+        Minecraft.system.run(() => { if (!playerNear) entity.kill() })
     }
 
     for (let player of Minecraft.world.getPlayers()) if (player.hasTag("sitOnStairs:settings")) {
