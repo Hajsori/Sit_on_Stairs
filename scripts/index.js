@@ -39,12 +39,6 @@ Minecraft.system.run(function tick() {
     Minecraft.system.run(tick)
 
 
-    try {
-        Minecraft.world.getDimension("overworld").runCommand(`scoreboard objectives add sitOnStairs:data dummy "Sit On Stairs - Data"`)
-        Minecraft.world.getDimension("overworld").runCommand(`scoreboard players set "seat:All Stairs" sitOnStairs:data 1`)
-        Minecraft.world.getDimension("overworld").runCommand(`scoreboard players set "seat:All Slabs" sitOnStairs:data 1`)
-    } catch { }
-
     for (let entity of Minecraft.world.getDimension("overworld").getEntities()) if (entity?.typeId == "sit:seat") {
         let playerNear = false
         entity.runCommandAsync(`testfor @a[r=1]`).then((res) => {
@@ -115,4 +109,10 @@ Minecraft.system.beforeEvents.watchdogTerminate.subscribe((data) => data.cancel 
 
 Minecraft.world.afterEvents.worldInitialize.subscribe(() => {
     console.warn("[Sit on Stairs] Loaded Addon")
+
+    if (!Minecraft.world.scoreboard.getObjective("sitOnStairs:data")) {
+        const dataScoreboard = Minecraft.world.scoreboard.addObjective("sitOnStairs:data", "Sit on Stairs Data")
+        dataScoreboard.addScore("seat:All Stairs", 1)
+        dataScoreboard.addScore("seat:All Slabs", 1)
+    }
 })
