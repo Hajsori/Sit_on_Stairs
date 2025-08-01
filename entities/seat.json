@@ -1,27 +1,29 @@
 {
-    "format_version": "1.16.0",
+    "format_version": "1.21.50",
     "minecraft:entity": {
         "description": {
             "identifier": "sit:seat",
-            "is_summonable": true,
-            "is_spawnable": false,
-            "is_experimental": false
+			"is_summonable": true,
+			"is_spawnable": false,
+			"is_experimental": false
         },
         "components": {
-            "minecraft:type_family": {
-                "family": ["seat"]
-            },
-            "minecraft:health": {
-                "value": 20,
-                "max": 20
-            },
-            "minecraft:collision_box": {
-                "width": 0.5,
-                "height": 0.5
-            },
             "minecraft:rideable": {
-                "seat_count": 1,
-                "family_types": ["player"]
+                "seat_count": 1
+            },
+			"minecraft:physics": { 
+				"has_gravity": false,
+				"has_collision": false
+			},
+			"minecraft:pushable": {
+				"is_pushable": false,
+				"is_pushable_by_piston": false
+			},
+            "minecraft:damage_sensor": {
+                "triggers": {
+                    "cause": "all",
+                    "deals_damage": "no"
+                }
             }
         }
     }
