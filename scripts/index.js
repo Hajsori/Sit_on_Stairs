@@ -67,7 +67,7 @@ Minecraft.system.beforeEvents.startup.subscribe((event) => {
         {
             name: "sit:seats",
             description: "Opens the Sit on Stairs settings menu",
-            permissionLevel: Minecraft.CommandPermissionLevel.Admin
+            permissionLevel: Minecraft.CommandPermissionLevel.GameDirectors
         },
         (origin) => {
             Minecraft.system.run(() => {
@@ -121,57 +121,73 @@ function createSit(block, player, yOffset = 0) {
 }
 
 function showSettingsMenu(player) {
-    new MinecraftUi.ActionFormData()
-        .title("§r§fSit on Stairs §8- §fSettings§r")
-        .button("Seats")
-        .show(player).then((res) => {
-            if (res.canceled) return
+    let buttons = []
+    let form = new MinecraftUi.ActionFormData()
 
-            if (res.selection == 0) {
-                let buttons = []
-                let form = new MinecraftUi.ActionFormData()
+    for (let data of Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScores()) if (data.participant.displayName.startsWith("seat")) {
+        let activated = Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == data.participant.displayName))
+        buttons.push({ value: `§r§8${data.participant.displayName.replace("seat:", "").replace("seatId:", "")}§r\n${`§fActivated: ${activated}`.replace("0", "§cFalse§r").replace("1", "§aTrue§r")}`, activated: activated, id: data.participant.displayName })
+    }
+    buttons.push({ value: "Add new Seat" })
 
-                for (let data of Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScores()) if (data.participant.displayName.startsWith("seat")) {
-                    let activated = Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == data.participant.displayName))
-                    buttons.push({ value: `§r§8${data.participant.displayName.replace("seat:", "").replace("seatId:", "")}§r\n${`§fActivated: ${activated}`.replace("0", "§cFalse§r").replace("1", "§aTrue§r")}`, activated: activated, id: data.participant.displayName })
-                }
-                buttons.push({ value: "Add new Seat" })
+    for (let button of buttons) form.button(button.value)
+    form.show(player).then((res) => {
+        if (res.canceled) return
 
-                for (let button of buttons) form.button(button.value)
-                form.show(player).then((res) => {
-                    if (res.canceled) return
-
-                    let selection = buttons[res.selection]
-                    if (selection.value == "Add new Seat") {
-                        new MinecraftUi.ModalFormData()
-                            .title("§r§fSit on Stairs §8- §fSettings §8- §fAdd new Seat§r")
-                            .label("Made by Hajsori")
-                            .textField("Block ID", "minecraft:stone")
-                            .slider("Height", 0, 10, { defaultValue: 1 })
-                            .show(player).then((res) => {console.warn(JSON.stringify(res.formValues))
-                                player.runCommand(`scoreboard players set "seatId:${res.formValues[1]}" sitOnStairs:data 1`)
-                                player.runCommand(`scoreboard players set "height:${res.formValues[1]}" sitOnStairs:data ${res.formValues[2]}`)
-                            })
-                    } else {
-                        if (selection.activated <= 0) selection.activated = false
-                        else selection.activated = true
-
-                        let modal = new MinecraftUi.ModalFormData()
-                            .title(`§r§8Sit on Stairs §f- §8Settings §f- ${selection.value.split("\n")[0]}§r`)
-                            .toggle("Activated", { defaultValue: selection.activated })
-                        if (!selection.id.startsWith("seat:")) {
-                            const height = Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == selection.id))
-                            modal.slider("Height", 0, 10, { defaultValue: height })
-                        }
-                        modal.show(player).then((res) => {
-                            if (res.canceled) return
-
-                            if (res?.formValues[0]) player.runCommand(`scoreboard players set "${selection.id}" sitOnStairs:data 1`)
-                            else player.runCommand(`scoreboard players set "${selection.id}" sitOnStairs:data 0`)
-                            if (res?.formValues[1]) player.runCommand(`scoreboard players set "height:${selection.id.replace("seatId:").replace("undefined", "")}" sitOnStairs:data ${res.formValues[1]}`)
-                        })
-                    }
+        let selection = buttons[res.selection]
+        if (selection.value == "Add new Seat") {
+            new MinecraftUi.ModalFormData()
+                .title("§r§fSit on Stairs §8- §fSettings §8- §fAdd new Seat§r")
+                .label("Made by Hajsori")
+                .textField("Block ID", "minecraft:stone")
+                .slider("Height", 0, 10, { defaultValue: 1 })
+                .show(player).then((res) => {
+                    player.runCommand(`scoreboard players set "seatId:${res.formValues[1]}" sitOnStairs:data 1`)
+                    player.runCommand(`scoreboard players set "height:${res.formValues[1]}" sitOnStairs:data ${res.formValues[2]}`)
                 })
+        } else {
+            if (selection.activated <= 0) selection.activated = false
+            else selection.activated = true
+
+            let modal = new MinecraftUi.ModalFormData()
+                .title(`§r§8Sit on Stairs §f- §8Settings §f- ${selection.value.split("\n")[0]}§r`)
+                .toggle("Activated", { defaultValue: selection.activated })
+
+            if (!selection.id.startsWith("seat:")) {
+                const height = Minecraft.world.scoreboard.getObjective("sitOnStairs:data").getScore(Minecraft.world.scoreboard.getParticipants().find(pT => pT.displayName == selection.id))
+                modal.slider("Height", 0, 10, { defaultValue: height })
             }
-        })
+            modal.toggle("Delete Seat", { defaultValue: false })
+            
+            modal.show(player).then((res) => {
+                if (res.canceled) return
+
+                if (res?.formValues[0]) {
+                    player.runCommand(`scoreboard players set "${selection.id}" sitOnStairs:data 1`)
+                } else {
+                    player.runCommand(`scoreboard players set "${selection.id}" sitOnStairs:data 0`)
+                }
+                if (res?.formValues[1]) {
+                    player.runCommand(`scoreboard players set "height:${selection.id.replace("seatId:").replace("undefined", "")}" sitOnStairs:data ${res.formValues[1]}`)
+                }
+                if (res?.formValues[2]) {
+                    new MinecraftUi.MessageFormData()
+                        .title("§r§8Sit on Stairs §f- §8Settings §f- §8Delete Seat")
+                        .body(`§cAre you sure you want to delete the seat §2${selection.value.split("\n")[0]}§c?`)
+                        .button1("§aNo")
+                        .button2("§cYes")
+                        .show(player).then((res) => {
+                            if (res.canceled || res.selection == 0) {
+                                return
+                            }
+
+                            if (res.selection == 1) {
+                                player.runCommand(`scoreboard players reset "${selection.id}" sitOnStairs:data`)
+                                player.runCommand(`scoreboard players reset "height:${selection.id.replace("seatId:").replace("undefined", "")}" sitOnStairs:data`)
+                            }
+                        })
+                }
+            })
+        }
+    })
 }
