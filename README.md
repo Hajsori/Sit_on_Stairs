@@ -1,3 +1,5 @@
+[![Join us on Discord](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/social/discord-plural_vector.svg)](https://discord.gg/AqG9WRMDjp) [![Available on CurseForge](https://cdn.jsdelivr.net/npm/@intergrav/devins-badges@3/assets/cozy/available/curseforge_vector.svg)](https://www.curseforge.com/minecraft-bedrock/scripts/sit-on-stairs)
+
 With this Addon named "Sit on Stairs" you can sit on Stairs and if you add other Blocks to the Settings, you can sit on every Block! Without any function like in other Addons, you just need to click on a Stair and you will sit, no other Block that you need to craft, no Texture pack, just a click on a Stair. And you don't need new Blocks or something else, just normal stairs!
 
 
